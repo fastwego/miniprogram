@@ -1,6 +1,6 @@
 # fastwego/miniprogram
 
-A fast wechat miniprogram development framework written in Golang
+A fast wechat miniprogram/minigame development framework written in Golang
 
 ## 演示 Demo
 
@@ -55,7 +55,8 @@ FastWeGo 是一套完整的微信开发框架，包括公众号、开放平台�
 
 ## 接口列表
 
-[doc/apilist.md](doc/apilist.md)
+- 小程序 [doc/apilist.md](doc/apilist.md)
+- 小游戏 [minigame/doc/apilist.md](minigame/doc/apilist.md)
 
 ## 参与贡献
 

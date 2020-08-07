@@ -38,7 +38,7 @@ func run() {
 		fmt.Println(err)
 		return
 	}
-	pattern := `href="(/miniprogram/dev/api-backend/.+\.html)"`
+	pattern := `href="(/minigame/dev/api-backend/.+\.html)"`
 	reg := regexp.MustCompile(pattern)
 	matched := reg.FindAllStringSubmatch(string(file), -1)
 
@@ -67,7 +67,9 @@ func run() {
 		//fmt.Println(_NAME_)
 
 		_REQUEST_ := strings.TrimSpace(doc.Find("#docContent > div.content > h3#请求地址").Next().Text())
-		//fmt.Println(_REQUEST_)
+		if _REQUEST_ == "" {
+			_REQUEST_ = strings.TrimSpace(doc.Find("#docContent > div.content > h3#正式环境").Next().Text())
+		}
 
 		if _REQUEST_ == "" || len(pkg_and_funcname) != 2 {
 			continue
@@ -81,6 +83,9 @@ func run() {
 		//GetParams: []Param{
 		//	{Name: `appid`, Type: `string`},
 		//	{Name: `redirect_uri`, Type: `string`},
+		//	{Name: `response_type`, Type: `string`},
+		//	{Name: `scope`, Type: `string`},
+		//	{Name: `state`, Type: `string`},
 		//},
 
 		_GET_PARAMS_ := ""

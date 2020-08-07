@@ -27,10 +27,19 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
+var buildType = "miniprogram"
+
 func main() {
 	var pkgFlag string
 	flag.StringVar(&pkgFlag, "package", "default", "")
+
+	flag.StringVar(&buildType, "type", "miniprogram", "")
 	flag.Parse()
+
+	if buildType == "minigame" {
+		apiConfig = apiConfigMinigame
+	}
+
 	for _, group := range apiConfig {
 
 		//if group.Package == pkgFlag {
@@ -55,7 +64,11 @@ func apilist() {
 				api.FuncName = strcase.ToCamel(path.Base(parse.Path))
 			}
 
-			godocLink := fmt.Sprintf("https://pkg.go.dev/github.com/fastwego/miniprogram/%s?tab=doc#%s", group.Package, api.FuncName)
+			godocLink := fmt.Sprintf("https://pkg.go.dev/github.com/fastwego/miniprogram/apis/%s?tab=doc#%s", group.Package, api.FuncName)
+			if buildType == "minigame" {
+				godocLink = fmt.Sprintf("https://pkg.go.dev/github.com/fastwego/miniprogram/minigame/apis/%s?tab=doc#%s", group.Package, api.FuncName)
+			}
+
 			fmt.Printf("\t- [%s](%s) \n\t\t- [%s (%s)](%s)\n", api.Name, api.See, api.FuncName, parse.Path, godocLink)
 		}
 	}
@@ -188,19 +201,32 @@ func build(group ApiGroup) {
 	}
 
 	fileContent := fmt.Sprintf(fileTpl, path.Base(group.Package), group.Name, path.Base(group.Package), strings.Join(consts, ``), strings.Join(funcs, ``))
+
 	filename := "./../apis/" + group.Package + "/" + path.Base(group.Package) + ".go"
+	if buildType == "minigame" {
+		filename = "./../minigame/apis/" + group.Package + "/" + path.Base(group.Package) + ".go"
+	}
+
 	_ = os.MkdirAll(path.Dir(filename), 0644)
 	ioutil.WriteFile(filename, []byte(fileContent), 0644)
 
 	// output Test
 	testFileContent := fmt.Sprintf(testFileTpl, path.Base(group.Package), strings.Join(testFuncs, ``))
 	//fmt.Println(testFileContent)
-	ioutil.WriteFile("./../apis/"+group.Package+"/"+path.Base(group.Package)+"_test.go", []byte(testFileContent), 0644)
+	filename = "./../apis/" + group.Package + "/" + path.Base(group.Package) + "_test.go"
+	if buildType == "minigame" {
+		filename = "./../minigame/apis/" + group.Package + "/" + path.Base(group.Package) + "_test.go"
+	}
+	ioutil.WriteFile(filename, []byte(testFileContent), 0644)
 
 	// output example
 	exampleFileContent := fmt.Sprintf(exampleFileTpl, path.Base(group.Package), strings.Join(exampleFuncs, ``))
 	//fmt.Println(testFileContent)
-	ioutil.WriteFile("./../apis/"+group.Package+"/example_"+path.Base(group.Package)+"_test.go", []byte(exampleFileContent), 0644)
+	filename = "./../apis/" + group.Package + "/example_" + path.Base(group.Package) + "_test.go"
+	if buildType == "minigame" {
+		filename = "./../minigame/apis/" + group.Package + "/example_" + path.Base(group.Package) + "_test.go"
+	}
+	ioutil.WriteFile(filename, []byte(exampleFileContent), 0644)
 
 }
 
