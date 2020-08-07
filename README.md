@@ -2,7 +2,31 @@
 
 A fast wechat miniprogram/minigame development framework written in Golang
 
-## 演示 Demo
+## 快速开始 & demo
+
+```shell script
+go get github.com/fastwego/miniprogram
+```
+
+```go
+// 创建小程序/小游戏实例
+app := miniprogram.New(miniprogram.MiniprogramConfig{
+    Appid:  "APPID",
+    Secret: "SECRET",
+})
+
+var payload = []byte(`{
+  "begin_date" : "20170313",
+  "end_date" : "20170313"
+}`)
+
+// 调用 api
+resp, err := datacube.GetDailyRetain(app, payload)
+fmt.Println(string(resp),err)
+```
+
+
+完整演示项目：
 
 [https://github.com/fastwego/miniprogram-demo](https://github.com/fastwego/miniprogram-demo)
 
