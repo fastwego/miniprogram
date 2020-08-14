@@ -34,7 +34,7 @@ type GetAccessTokenFunc func(ctx *Miniprogram) (accessToken string, err error)
 Miniprogram 实例
 */
 type Miniprogram struct {
-	Config      MiniprogramConfig
+	Config      Config
 	AccessToken AccessToken
 	Client      Client
 	Logger      *log.Logger
@@ -51,7 +51,7 @@ type AccessToken struct {
 /*
 小程序配置
 */
-type MiniprogramConfig struct {
+type Config struct {
 	Appid  string
 	Secret string
 }
@@ -59,7 +59,7 @@ type MiniprogramConfig struct {
 /*
 创建小程序实例
 */
-func New(config MiniprogramConfig) (miniprogram *Miniprogram) {
+func New(config Config) (miniprogram *Miniprogram) {
 	instance := Miniprogram{
 		Config: config,
 		AccessToken: AccessToken{
@@ -70,7 +70,7 @@ func New(config MiniprogramConfig) (miniprogram *Miniprogram) {
 
 	instance.Client = Client{Ctx: &instance}
 
-	instance.Logger = log.New(os.Stdout, "[miniprogram] ", log.LstdFlags)
+	instance.Logger = log.New(os.Stdout, "[miniprogram] ", log.LstdFlags|log.Llongfile)
 
 	return &instance
 }

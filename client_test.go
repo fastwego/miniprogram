@@ -23,7 +23,7 @@ import (
 
 func TestClient_getAccessToken(t *testing.T) {
 
-	var MockMiniprogram = New(MiniprogramConfig{
+	var MockMiniprogram = New(Config{
 		Appid:  "TestClient_getAccessToken",
 		Secret: "SECRET",
 	})

@@ -32,7 +32,7 @@ var onceSetup sync.Once
 func Setup() {
 	onceSetup.Do(func() {
 
-		MockMiniprogram = miniprogram.New(miniprogram.MiniprogramConfig{
+		MockMiniprogram = miniprogram.New(miniprogram.Config{
 			Appid:  "APPID",
 			Secret: "SECRET",
 		})
