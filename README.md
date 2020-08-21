@@ -1,6 +1,6 @@
 # fastwego/miniprogram
 
-A fast wechat miniprogram/minigame development framework written in Golang
+A fast [wechat miniprogram/minigame](https://developers.weixin.qq.com/miniprogram/dev/framework/) development sdk written in Golang
 
 [![GoDoc](https://pkg.go.dev/badge/github.com/fastwego/miniprogram?status.svg)](https://pkg.go.dev/github.com/fastwego/miniprogram?tab=doc)
 [![Go Report Card](https://goreportcard.com/badge/github.com/fastwego/miniprogram)](https://goreportcard.com/report/github.com/fastwego/miniprogram)
