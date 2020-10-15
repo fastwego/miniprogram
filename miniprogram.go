@@ -30,6 +30,9 @@ import (
 // GetAccessTokenFunc 获取 access_token 方法接口
 type GetAccessTokenFunc func(ctx *Miniprogram) (accessToken string, err error)
 
+// NoticeAccessTokenExpireFunc 通知中控 刷新 access_token
+type NoticeAccessTokenExpireFunc func(ctx *Miniprogram) (err error)
+
 /*
 Miniprogram 实例
 */
@@ -44,8 +47,9 @@ type Miniprogram struct {
 AccessToken 管理器 处理缓存 和 刷新 逻辑
 */
 type AccessToken struct {
-	Cache                 cachego.Cache
-	GetAccessTokenHandler GetAccessTokenFunc
+	Cache                          cachego.Cache
+	GetAccessTokenHandler          GetAccessTokenFunc
+	NoticeAccessTokenExpireHandler NoticeAccessTokenExpireFunc
 }
 
 /*
@@ -63,8 +67,9 @@ func New(config Config) (miniprogram *Miniprogram) {
 	instance := Miniprogram{
 		Config: config,
 		AccessToken: AccessToken{
-			Cache:                 file.New(os.TempDir()),
-			GetAccessTokenHandler: GetAccessToken,
+			Cache:                          file.New(os.TempDir()),
+			GetAccessTokenHandler:          GetAccessToken,
+			NoticeAccessTokenExpireHandler: NoticeAccessTokenExpire,
 		},
 	}
 
@@ -73,33 +78,4 @@ func New(config Config) (miniprogram *Miniprogram) {
 	instance.Logger = log.New(os.Stdout, "[miniprogram] ", log.LstdFlags|log.Llongfile)
 
 	return &instance
-}
-
-/*
-SetAccessTokenCacheDriver 设置 AccessToken 缓存器 默认为文件缓存：目录 os.TempDir()
-
-驱动接口类型 为 cachego.Cache
-*/
-func (miniprogram *Miniprogram) SetAccessTokenCacheDriver(driver cachego.Cache) {
-	miniprogram.AccessToken.Cache = driver
-}
-
-/*
-SetGetAccessTokenHandler 设置 AccessToken 获取方法。默认 从本地缓存获取（过期从微信接口刷新）
-
-如果有多实例服务，可以设置为 Redis 或 RPC 等中控服务器 获取 就可以避免 AccessToken 刷新冲突
-*/
-func (miniprogram *Miniprogram) SetGetAccessTokenHandler(f GetAccessTokenFunc) {
-	miniprogram.AccessToken.GetAccessTokenHandler = f
-}
-
-/*
-SetLogger 日志记录 默认输出到 os.Stdout
-
-可以新建 logger 输出到指定文件
-
-如果不想开启日志，可以输出到 /dev/null log.SetOutput(ioutil.Discard)
-*/
-func (miniprogram *Miniprogram) SetLogger(logger *log.Logger) {
-	miniprogram.Logger = logger
 }

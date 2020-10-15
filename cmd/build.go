@@ -36,8 +36,11 @@ func main() {
 	flag.StringVar(&buildType, "type", "miniprogram", "")
 	flag.Parse()
 
-	if buildType == "minigame" {
+	switch buildType {
+	case "minigame":
 		apiConfig = apiConfigMinigame
+	case "wxopen":
+		apiConfig = apiConfigWxopen
 	}
 
 	for _, group := range apiConfig {
@@ -50,7 +53,6 @@ func main() {
 	if pkgFlag == "apilist" {
 		apilist()
 	}
-
 }
 
 func apilist() {
@@ -67,6 +69,8 @@ func apilist() {
 			godocLink := fmt.Sprintf("https://pkg.go.dev/github.com/fastwego/miniprogram/apis/%s?tab=doc#%s", group.Package, api.FuncName)
 			if buildType == "minigame" {
 				godocLink = fmt.Sprintf("https://pkg.go.dev/github.com/fastwego/miniprogram/minigame/apis/%s?tab=doc#%s", group.Package, api.FuncName)
+			} else if buildType == "wxopen" {
+				godocLink = fmt.Sprintf("https://pkg.go.dev/github.com/fastwego/miniprogram/wxopen/apis/%s?tab=doc#%s", group.Package, api.FuncName)
 			}
 
 			fmt.Printf("\t- [%s](%s) \n\t\t- [%s (%s)](%s)\n", api.Name, api.See, api.FuncName, parse.Path, godocLink)
@@ -205,6 +209,8 @@ func build(group ApiGroup) {
 	filename := "./../apis/" + group.Package + "/" + path.Base(group.Package) + ".go"
 	if buildType == "minigame" {
 		filename = "./../minigame/apis/" + group.Package + "/" + path.Base(group.Package) + ".go"
+	} else if buildType == "wxopen" {
+		filename = "./../wxopen/apis/" + group.Package + "/" + path.Base(group.Package) + ".go"
 	}
 
 	_ = os.MkdirAll(path.Dir(filename), 0644)
@@ -216,6 +222,8 @@ func build(group ApiGroup) {
 	filename = "./../apis/" + group.Package + "/" + path.Base(group.Package) + "_test.go"
 	if buildType == "minigame" {
 		filename = "./../minigame/apis/" + group.Package + "/" + path.Base(group.Package) + "_test.go"
+	} else if buildType == "wxopen" {
+		filename = "./../wxopen/apis/" + group.Package + "/" + path.Base(group.Package) + "_test.go"
 	}
 	ioutil.WriteFile(filename, []byte(testFileContent), 0644)
 
@@ -225,6 +233,8 @@ func build(group ApiGroup) {
 	filename = "./../apis/" + group.Package + "/example_" + path.Base(group.Package) + "_test.go"
 	if buildType == "minigame" {
 		filename = "./../minigame/apis/" + group.Package + "/example_" + path.Base(group.Package) + "_test.go"
+	} else if buildType == "wxopen" {
+		filename = "./../wxopen/apis/" + group.Package + "/example_" + path.Base(group.Package) + "_test.go"
 	}
 	ioutil.WriteFile(filename, []byte(exampleFileContent), 0644)
 

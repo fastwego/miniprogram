@@ -37,6 +37,7 @@ fmt.Println(string(resp),err)
 
 - 小程序 [doc/apilist.md](doc/apilist.md)
 - 小游戏 [minigame/doc/apilist.md](minigame/doc/apilist.md)
+- 开放平台 [wxopen/doc/apilist.md](wxopen/doc/apilist.md)
 
 ## 架构设计
 
@@ -69,9 +70,6 @@ fmt.Println(string(resp),err)
 
 每个关键环节都为你完整记录，Debug 倍轻松，你可以自由定义日志输出，甚至可以关闭日志
 
-### 多账号支持
-
-一套服务支持多个账号，轻松成为第三方开发服务平台，业务节节高
 
 ### 支持服务集群
 

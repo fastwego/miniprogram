@@ -27,10 +27,12 @@ import (
 	"time"
 )
 
-/*
-微信 api 服务器地址
-*/
-var WXServerUrl = "https://api.weixin.qq.com"
+var (
+	WXServerUrl            = "https://api.weixin.qq.com" // 微信 api 服务器地址
+	UserAgent              = "fastwego/miniprogram"
+	ErrorAccessTokenExpire = errors.New("access token expire")
+	ErrorSystemBusy        = errors.New("system busy")
+)
 
 /*
 HttpClient 用于向公众号接口发送请求
@@ -41,36 +43,104 @@ type Client struct {
 
 // HTTPGet GET 请求
 func (client *Client) HTTPGet(uri string) (resp []byte, err error) {
-	uri, err = client.applyAccessToken(uri)
+	newUrl, err := client.applyAccessToken(uri)
 	if err != nil {
 		return
 	}
-	if client.Ctx.Logger != nil {
-		client.Ctx.Logger.Printf("GET %s", uri)
-	}
-	response, err := http.Get(WXServerUrl + uri)
+
+	req, err := http.NewRequest(http.MethodGet, WXServerUrl+newUrl, nil)
 	if err != nil {
 		return
 	}
-	defer response.Body.Close()
-	return responseFilter(response)
+
+	return client.httpDo(req)
 }
 
 //HTTPPost POST 请求
 func (client *Client) HTTPPost(uri string, payload io.Reader, contentType string) (resp []byte, err error) {
-	uri, err = client.applyAccessToken(uri)
+	newUrl, err := client.applyAccessToken(uri)
 	if err != nil {
 		return
 	}
-	if client.Ctx.Logger != nil {
-		client.Ctx.Logger.Printf("POST %s", uri)
+
+	req, err := http.NewRequest(http.MethodPost, WXServerUrl+newUrl, payload)
+	if err != nil {
+		return
 	}
-	response, err := http.Post(WXServerUrl+uri, contentType, payload)
+
+	req.Header.Add("Content-Type", contentType)
+
+	return client.httpDo(req)
+}
+
+//httpDo 执行 请求
+func (client *Client) httpDo(req *http.Request) (resp []byte, err error) {
+	req.Header.Add("User-Agent", UserAgent)
+
+	if client.Ctx.Logger != nil {
+		client.Ctx.Logger.Printf("%s %s Headers %v", req.Method, req.URL.String(), req.Header)
+	}
+
+	response, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return
 	}
 	defer response.Body.Close()
-	return responseFilter(response)
+
+	resp, err = responseFilter(response)
+
+	// 发现 access_token 过期
+	if err == ErrorAccessTokenExpire {
+
+		// 主动 通知 access_token 过期
+		err = client.Ctx.AccessToken.NoticeAccessTokenExpireHandler(client.Ctx)
+		if err != nil {
+			return
+		}
+
+		// 通知到位后 access_token 会被刷新，那么可以 retry 了
+		var accessToken string
+		accessToken, err = client.Ctx.AccessToken.GetAccessTokenHandler(client.Ctx)
+		if err != nil {
+			return
+		}
+
+		// 换新
+		q := req.URL.Query()
+		q.Set("access_token", accessToken)
+		req.URL.RawQuery = q.Encode()
+
+		if client.Ctx.Logger != nil {
+			client.Ctx.Logger.Printf("%v retry %s %s Headers %v", ErrorAccessTokenExpire, req.Method, req.URL.String(), req.Header)
+		}
+
+		response, err = http.DefaultClient.Do(req)
+		if err != nil {
+			return
+		}
+		defer response.Body.Close()
+
+		resp, err = responseFilter(response)
+	}
+
+	// -1 系统繁忙，此时请开发者稍候再试
+	// 重试一次
+	if err == ErrorSystemBusy {
+
+		if client.Ctx.Logger != nil {
+			client.Ctx.Logger.Printf("%v : retry %s %s Headers %v", ErrorSystemBusy, req.Method, req.URL.String(), req.Header)
+		}
+
+		response, err = http.DefaultClient.Do(req)
+		if err != nil {
+			return
+		}
+		defer response.Body.Close()
+
+		resp, err = responseFilter(response)
+	}
+
+	return
 }
 
 /*
@@ -116,11 +186,23 @@ func responseFilter(response *http.Response) (resp []byte, err error) {
 		return
 	}
 
+	// 40001(覆盖刷新超过5min后，使用旧 access_token 报错) 获取 access_token 时 AppSecret 错误，或者 access_token 无效。请开发者认真比对 AppSecret 的正确性，或查看是否正在为恰当的公众号调用接口
+	// 42001(超过 7200s 后 报错) - access_token 超时，请检查 access_token 的有效期，请参考基础支持 - 获取 access_token 中，对 access_token 的详细机制说明
+	if errorResponse.Errcode == 42001 || errorResponse.Errcode == 40001 {
+		err = ErrorAccessTokenExpire
+		return
+	}
+
+	//  -1	系统繁忙，此时请开发者稍候再试
+	if errorResponse.Errcode == -1 {
+		err = ErrorSystemBusy
+		return
+	}
+
 	if errorResponse.Errcode != 0 {
 		err = errors.New(string(resp))
 		return
 	}
-
 	return
 }
 
@@ -148,17 +230,12 @@ func GetAccessToken(ctx *Miniprogram) (accessToken string, err error) {
 		return
 	}
 
-	if ctx.Logger != nil {
-		ctx.Logger.Printf("refreshAccessTokenFromWXServer appid = %s secret = %s\n", ctx.Config.Appid, ctx.Config.Secret)
-	}
-
 	accessToken, expiresIn, err := refreshAccessTokenFromWXServer(ctx.Config.Appid, ctx.Config.Secret)
 	if err != nil {
 		return
 	}
 
-	// 提前过期 提供冗余时间
-	expiresIn = int(0.9 * float64(expiresIn))
+	// 本地缓存 access_token
 	d := time.Duration(expiresIn) * time.Second
 	_ = ctx.AccessToken.Cache.Save(ctx.Config.Appid, accessToken, d)
 
@@ -166,6 +243,20 @@ func GetAccessToken(ctx *Miniprogram) (accessToken string, err error) {
 		ctx.Logger.Printf("%s %s %d\n", "refreshAccessTokenFromWXServer", accessToken, expiresIn)
 	}
 
+	return
+}
+
+/*
+NoticeAccessTokenExpire 只需将本地存储的 access_token 删除，即完成了 access_token 已过期的 主动通知
+
+retry 请求的时候，会发现本地没有 access_token ，从而触发refresh
+*/
+func NoticeAccessTokenExpire(ctx *Miniprogram) (err error) {
+	if ctx.Logger != nil {
+		ctx.Logger.Println("NoticeAccessTokenExpire")
+	}
+
+	err = ctx.AccessToken.Cache.Delete(ctx.Config.Appid)
 	return
 }
 

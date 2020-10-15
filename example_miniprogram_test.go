@@ -28,10 +28,10 @@ func ExampleMiniprogram_SetAccessTokenCacheDriver() {
 	var App *miniprogram.Miniprogram
 
 	// 使用内存
-	App.SetAccessTokenCacheDriver(sync.New())
+	App.AccessToken.Cache = sync.New()
 
 	// 使用指定目录下的 文件
-	App.SetAccessTokenCacheDriver(file.New(os.TempDir()))
+	App.AccessToken.Cache = file.New(os.TempDir())
 
 	// 更多驱动 请查看 https://github.com/faabiosr/cachego
 }
@@ -41,14 +41,14 @@ func ExampleMiniprogram_SetLogger() {
 	var Ctx *miniprogram.Miniprogram
 
 	// 输出日志到控制台
-	Ctx.SetLogger(log.New(os.Stdout, "[miniprogram]", log.LstdFlags))
+	Ctx.Logger = log.New(os.Stdout, "[miniprogram]", log.LstdFlags)
 
 	// 记录日志到指定文件
 	logFile, _ := os.OpenFile("/path/to/file", os.O_WRONLY, 0644)
-	Ctx.SetLogger(log.New(logFile, "[miniprogram]", log.LstdFlags))
+	Ctx.Logger = log.New(logFile, "[miniprogram]", log.LstdFlags)
 
 	// 关闭日志
-	Ctx.SetLogger(nil)
+	Ctx.Logger = nil
 }
 
 func ExampleMiniprogram_SetGetAccessTokenHandler() {
@@ -58,8 +58,8 @@ func ExampleMiniprogram_SetGetAccessTokenHandler() {
 	_, _ = conn.Do("AUTH", "PASSWORD")
 
 	// 从远程 Redis 服务器 获取 AccessToken
-	Ctx.SetGetAccessTokenHandler(func(ctx *miniprogram.Miniprogram) (accessToken string, err error) {
+	Ctx.AccessToken.GetAccessTokenHandler = func(ctx *miniprogram.Miniprogram) (accessToken string, err error) {
 		accessToken, _ = redis.String(conn.Do("GET", "access_token:"+ctx.Config.Appid))
 		return
-	})
+	}
 }
