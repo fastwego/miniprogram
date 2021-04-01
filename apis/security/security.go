@@ -17,7 +17,7 @@ package security
 
 import (
 	"bytes"
-	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"os"
 	"path"
@@ -41,27 +41,30 @@ See: https://developers.weixin.qq.com/miniprogram/dev/api-backend/open-api/sec-c
 POST(@media) https://api.weixin.qq.com/wxa/img_sec_check?access_token=ACCESS_TOKEN
 */
 func ImgSecCheck(ctx *miniprogram.Miniprogram, media string) (resp []byte, err error) {
-	r, w := io.Pipe()
-	m := multipart.NewWriter(w)
-	go func() {
-		defer w.Close()
-		defer m.Close()
 
-		part, err := m.CreateFormFile("media", path.Base(media))
-		if err != nil {
-			return
-		}
-		file, err := os.Open(media)
-		if err != nil {
-			return
-		}
-		defer file.Close()
-		if _, err = io.Copy(part, file); err != nil {
-			return
-		}
+	file, err := os.Open(media)
+	if err != nil {
+		return nil, err
+	}
+	fileContents, err := ioutil.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+	file.Close()
 
-	}()
-	return ctx.Client.HTTPPost(apiImgSecCheck, r, m.FormDataContentType())
+	body := new(bytes.Buffer)
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("media", path.Base(media))
+	if err != nil {
+		return nil, err
+	}
+	part.Write(fileContents)
+
+	err = writer.Close()
+	if err != nil {
+		return nil, err
+	}
+	return ctx.Client.HTTPPost(apiImgSecCheck, body, writer.FormDataContentType())
 }
 
 /*
