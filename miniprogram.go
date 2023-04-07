@@ -56,8 +56,9 @@ type AccessToken struct {
 小程序配置
 */
 type Config struct {
-	Appid  string
-	Secret string
+	Appid      string
+	Secret     string
+	PaySandbox bool
 }
 
 /*
